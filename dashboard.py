@@ -9,7 +9,7 @@ class dashboard:
     def __init__(self, root):
         self.root = root
         self.root.geometry("1350x700+0+0")
-        self.root.title("Stock Management System | Developed by JI")
+        self.root.title("Store Management System | Developed by JI")
         self.root.config(bg="white")
 
         # title

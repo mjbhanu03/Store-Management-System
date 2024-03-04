@@ -126,16 +126,16 @@ class employeeClass:
         
         # ==== Insert Part ===
         def insert ():
-            name = self.txt_name.get();
-            gender = self.txt_empGender.get();
-            contact = self.txt_empContact.get();
-            dob = self.txt_dob.get();
-            doj = self.txt_doj.get();
-            email = self.txt_email.get();
-            password = self.txt_pass.get();
-            utype = self.txt_utype.get();
-            address  = self.txt_add.get("1.0", "end-1c");
-            salary = self.txt_salary.get();
+            name = self.txt_name.get()
+            gender = self.txt_empGender.get()
+            contact = self.txt_empContact.get()
+            dob = self.txt_dob.get()
+            doj = self.txt_doj.get()
+            email = self.txt_email.get()
+            password = self.txt_pass.get()
+            utype = self.txt_utype.get()
+            address  = self.txt_add.get("1.0", "end-1c")
+            salary = self.txt_salary.get()
 
 
             if( name == "" or gender == "" or contact == "" or dob == "" or doj == "" or email == "" or  password == "" or  utype == "" or address == "" or  salary == ""):
@@ -336,8 +336,10 @@ class employeeClass:
         cursor.close()
         con.close()
         
-                # ==== SEARCH ====
-
+        # def close_window(self):
+        #     # Close the window
+        #     self.root.destroy()
+        
 
 if __name__=="__main__":       
     root = Tk()

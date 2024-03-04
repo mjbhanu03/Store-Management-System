@@ -4,6 +4,8 @@ from tkinter import ttk
 import mysql.connector as mysql
 import tkinter.messagebox as MessageBox
 import time
+import os
+import tempfile
 
 
 class BillingClass:
@@ -13,6 +15,7 @@ class BillingClass:
         self.root.title("Stock Management System | Developed by JI")
         self.root.config(bg="white")
         self.cart_list = []
+        self.chk_print = 0 
         # title
         self.icon_title = PhotoImage(file="images/logo.png")  # Correct file path
         title = Label(self.root, text="Stock Management System", image=self.icon_title, compound=LEFT,
@@ -21,7 +24,7 @@ class BillingClass:
           # Corrected placement
 
         # btn_logout
-        btn_logout = Button(self.root, text="Logout", font=("times new roman", 15, "bold"),bg="white",fg="black",cursor="hand2").place(x=1150,y=10,height=40,width=150)
+        btn_logout = Button(self.root, text="Logout", font=("times new roman", 15, "bold"),bg="white",fg="black",cursor="hand2",command=self.logout).place(x=1150,y=10,height=40,width=150)
 
         #===CLOCK===
         self.lbl_clock = Label(self.root, text="Welcome to Stock Management System\t\t Date: DD-MM-YYYY \t\t Time: HH:MM:SS",
@@ -212,11 +215,11 @@ class BillingClass:
         self.lbl_discounnt = Label(billMenuFrame,text='Discount\n [5%]',font=("goudy old style",15,"bold"),bg="lightgreen",fg="white")
         self.lbl_discounnt.place(x=124,y=5,width=120,height=70)
         
-        self.net_pay = Label(billMenuFrame,text='Net Pay\n [0]',font=("goudy old style",15,"bold"),bg="darkgreen",fg="white")
-        self.net_pay.place(x=246,y=5,width=150,height=70)
+        self.lbl_net_pay = Label(billMenuFrame,text='Net Pay\n [0]',font=("goudy old style",15,"bold"),bg="darkgreen",fg="white")
+        self.lbl_net_pay.place(x=246,y=5,width=150,height=70)
         
         
-        btn_print = Button(billMenuFrame,text='Print',font=("goudy old style",15,"bold"),cursor="hand2",bd=2,bg="darkgreen",fg="white")
+        btn_print = Button(billMenuFrame,text='Print',font=("goudy old style",15,"bold"),cursor="hand2",bd=2,bg="darkgreen",fg="white",command=self.print_bill)
         btn_print.place(x=2,y=80,width=117,height=50)
         
         btn_clear_all = Button(billMenuFrame,text='Clear All',font=("goudy old style",15,"bold"),command=self.clear_all,cursor="hand2",bd=2,bg="lightgreen",fg="white")
@@ -229,7 +232,7 @@ class BillingClass:
         
         footer = Label(self.root,text="SMS - Stock Management System | Developed by JI\nFor any technical issue contact: 7016 515 225",font=("times new roman",11),bg="#4d636d",fg="white",bd=0).pack(side=BOTTOM,fill=X) 
         self.display()
-        # self.bill_top()
+        self.update_date_time()
         
         
         # ==== All Functions ====
@@ -318,11 +321,11 @@ class BillingClass:
               self.var_pid.set(values[0]) 
               self.var_pname.set(values[1]) 
               self.var_price.set(values[2]) 
-              self.lbl_inStock.config(text=f"In Stock [{str(values[4])}]")
-              self.var_stock.set(values[4])
+              self.lbl_inStock.config(text=f"In Stock [{str(values[3])}]")
+              self.var_stock.set(values[3])
 
-      con.close()
-      cursor.close()
+              con.close()
+              cursor.close()
 
     def add_update_cart(self):
       if self.var_pid.get() == '':
@@ -370,10 +373,12 @@ class BillingClass:
       for row in self.cart_list:
       # id,name,price,quantity,status
         self.bill_amt=self.bill_amt+(float(row[2])*int(row[3]))
+      
       self.discount = (self.bill_amt*5)/100
       self.net_pay=self.bill_amt-self.discount
+     
       self.lbl_amnt.config(text=f'Bill Amnt\n{str(self.bill_amt)}')
-      self.net_pay.config(text=f'Net Pay\n{str(self.net_pay)}')
+      self.lbl_net_pay.config(text=f'Net Pay\n{str(self.net_pay)}')
       self.cart_title.config(text=f"Cart \t Total Product: [{str(len(self.cart_list))}]")      
       
     def show_cart(self):
@@ -401,7 +406,7 @@ class BillingClass:
         fp.write(self.txt_bill_area.get('1.0',END))
         fp.close()
         MessageBox.showinfo('saved','Bill has been Generated/Saved in Backend',parent=self.root)
-        
+        self.chk_print = 1   
         pass  
     def bill_top(self):
       self.invoice = int(time.strftime("%H%M%S")) + int(time.strftime("%d%M%S"))
@@ -430,13 +435,30 @@ Net Pay\t\t\t\tRs.{self.net_pay}
       self.txt_bill_area.insert(END,bill_bottom_temp)
 
     def bill_middle(self):
-      # id,name,price,quantity,status
+      con = mysql.connect(host="localhost", user="root", password="", database="stockmanagement")
+      cursor = con.cursor()
+      # try:
+      # id,name,price,quantity,stock
       for row in self.cart_list:
-        name=row[1]
-        qty=row[3]
-        price=float(row[2])*int(row[3])
-        price=str(price)
-        self.txt_bill_area.insert(END,"\n"+name+"\t\t\t"+qty+"\tRs."+price)
+          id = row[0]
+          name=row[1]
+          qty=int(row[4])-int(row[3])
+          if int(row[3]) == int(row[4]):
+              status = 'Inactive'
+          if int(row[3]) != int(row[4]):
+              status = 'Active'
+              
+          price=float(row[2])*int(row[3])
+          price=str(price)
+          self.txt_bill_area.insert(END,"\n"+name+"\t\t\t"+row[3]+"\tRs."+price)
+          cursor.execute('update product set quantity=%s,status=%s WHERE id=%s',(qty, status, id))
+          con.commit()
+      con.close()
+      self.display()    
+      # except Exception as ex:
+        # MessageBox.showerror("Error",f"Error due to: {str(ex)}",parent=self.root)
+
+    
     def clear_cart(self):
       self.var_pid.set('') 
       self.var_pname.set('') 
@@ -455,7 +477,28 @@ Net Pay\t\t\t\tRs.{self.net_pay}
       self.clear_cart()
       self.display()
       self.show_cart()
+      self.chk_print = 0
       
+    def update_date_time(self):
+      time_ = time.strftime("%I:%M:%S")
+      date_ = time.strftime("%d-%m-%y")
+      self.lbl_clock.config(text=f"Welcome to Stock Management System\t\t Date: {str(date_)} \t\t Time: {str(time_)}")
+      self.lbl_clock.after(200,self.update_date_time)
+
+    def print_bill(self):
+      if self.chk_print == 1:
+        MessageBox.showinfo('Print',"Please wait while printing",parent=self.root)
+        new_file = tempfile.mktemp('.txt')
+        open(new_file,'w').write(self.txt_bill_area.get('1.0',END))
+        os.startfile(new_file,'print')
+
+      else:
+        MessageBox.showerror('Error',"Please generate bill, to print the receipt",parent=self.root)
+
+
+    def logout(self):
+        self.root.destroy()
+        os.system("python login.py")
 
 if __name__=="__main__":   
       
